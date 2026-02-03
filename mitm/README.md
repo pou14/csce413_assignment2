@@ -18,8 +18,8 @@ Because the database communication is unencrypted, an attacker with access to th
 This is a serious security risk and shows how important it is of using encrypted connections between the web application and the database.
 
 ### Captured Flag
-After intercepting network traffic while clicking through the web application, Wireshark successfully captured sensitive data transmitted from the `api/secret` route. Because the communication was not encrypted, the response payload was visible in plaintext within the captured packets.
+After intercepting network traffic while clicking through the web application, Wireshark successfully captured sensitive data transmitted from the `api/secret` route. By using the captured authentication token, access to the protected service was obtained and the final flag was successfully retrieved.
 ```bash
-FLAG{n3tw0rk_tr4ff1c_1s_n0t_s3cur3}
+FLAG{p0rt_kn0ck1ng_4nd_h0n3yp0ts_s4v3_th3_d4y}
 ```
-As a result, the flag was clearly displayed directly in the packet contents, confirming that sensitive information can be intercepted through a MITM attack.
+This confirms that sensitive authentication data transmitted over an unencrypted connection can be intercepted and reused in a MITM attack to gain unauthorized access to protected resources.
