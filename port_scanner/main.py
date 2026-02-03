@@ -49,13 +49,16 @@ def scan_port(target, port, timeout=1.0):
         result = sk.connect_ex((target, port))
         total_time = time.time() - start_time
 
-        banner = None
         if result == 0:
             try:
-                sk.sendall(b"\r\n")
-                banner = sk.recv(512).decode(errors="ignore").strip()
+                sk.sendall(b"HEAD / HTTP/1.0\r\n\r\n")
+                banner = sk.recv(1024).decode(errors="ignore").strip()
             except:
-                banner = None
+                try:
+                    banner = sk.recv(1024).decode(errors="ignore").strip()
+                except:
+                    banner = None
+
 
         sk.close()
 
@@ -81,12 +84,6 @@ def scan_range(target, start_port, end_port):
     """
     open_ports = []
     closed_ports = []
-    try:
-        socket.gethostbyname(target)
-    except socket.gaierror:
-        print("Invalid hostname or IP address")
-        sys.exit(1)
-
     print(f"[*] Scanning {target} from port {start_port} to {end_port}")
     print(f"[*] This may take a while...")
 
@@ -100,29 +97,68 @@ def scan_range(target, start_port, end_port):
     def th(port):
         nonlocal scanned
         is_open, total_time, banner = scan_port(target, port)
-        service = banner if banner else None
 
         with lock:
             if is_open:
                 open_ports.append((port, total_time, banner))
             else:
-                closed_ports.append((port, total_time, service))
+                closed_ports.append((port, total_time, None))
             scanned += 1
             percent = int((scanned / total_ports) * 100)
             sys.stdout.write(f"\rProgress: {percent}% ({scanned}/{total_ports})")
             sys.stdout.flush()
 
+
     threads = []
+    MAX_THREADS = 3000   # 100–300 is perfect
 
     for port in range(start_port, end_port + 1):
         t = threading.Thread(target=th, args=(port,))
         threads.append(t)
         t.start()
 
-    for t in threads:
-        t.join()
+        if len(threads) >= MAX_THREADS:
+            for thd in threads:
+                thd.join()
+            threads = []
+
+    # join remaining threads
+    for thd in threads:
+        thd.join()
+
     
     return closed_ports, open_ports
+
+def expand_targets(target):
+    try:
+        if "/" in target:
+            network = ipaddress.ip_network(target, strict=False)
+            hosts = list(network.hosts())[1:201]
+            return [str(ip) for ip in hosts]
+        return [target]
+    except ValueError:
+        print("Invalid IP address or CIDR notation")
+        sys.exit(1)
+
+def is_host_up(ip, timeout=0.5):
+    """
+    Quick check to see if a host is alive by attempting a TCP connection
+    to common ports.
+    """
+    common_ports = [80, 443, 22, 3306, 5000, 5001]
+
+    for port in common_ports:
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.settimeout(timeout)
+            if s.connect_ex((ip, port)) == 0:
+                s.close()
+                return True
+            s.close()
+        except:
+            pass
+    return False
+
 
 def main():
     """Main function"""
@@ -154,17 +190,25 @@ def main():
         sys.exit(1)
 
     print(f"[*] Starting port scan on {target}")
+    targets = expand_targets(target)
 
-    closed_ports, open_ports = scan_range(target, start_port, end_port)
+    all_open = []
+
+    for t in targets:
+        print(f"\n[*] Scanning host {t}")
+        closed_ports, open_ports = scan_range(t, start_port, end_port)
+        for port, time_taken, banner in open_ports:
+            all_open.append((t, port, time_taken, banner))
 
     print(f"\n[+] Scan complete!")
-    print(f"\n[+] Found {len(open_ports)} open ports:")
-    for port, total_time, banner in sorted(open_ports):
-        print(f"Port {port}: open, ({round(total_time*1000,2)} ms), {banner}")
+    print(f"\n[+] Found {len(all_open)} open ports total:")
+
+    for host, port, total_time, banner in all_open:
+        print(f"{host}:{port} open ({round(total_time*1000,2)} ms) {banner}")
 
     print(f"\n[+] Found {len(closed_ports)} closed ports")
-    for port, total_time, banner in sorted(closed_ports):
-        print(f"Port {port}: closed, ({round(total_time*1000,2)} ms), {banner}")
+    # for port, total_time, banner in sorted(closed_ports):
+    #     print(f"Port {port}: closed, ({round(total_time*1000,2)} ms), {banner}")
 
 if __name__ == "__main__":
     main()
