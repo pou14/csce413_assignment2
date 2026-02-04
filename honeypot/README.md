@@ -1,16 +1,60 @@
-## Honeypot Starter Template
+## SSH Honeypot
+### What This Honeypot Does
+- Runs a fake SSH service on port 22
+- Looks like a real Ubuntu SSH server
+- Accepts login attempts but does not give real access
+- Logs attacker behavior for analysis
 
-This directory is a starter template for the honeypot portion of the assignment.
+### What Gets Logged
+- Attacker IP address and source port
+- Time of connection
+- Login attempts (username and password)
+- Commands typed after login
+- When the attacker disconnects
 
-### What you need to implement
-- Choose a protocol (SSH, HTTP, or multi-protocol).
-- Simulate a convincing service banner and responses.
-- Log connection metadata, authentication attempts, and attacker actions.
-- Store logs under `logs/` and include an `analysis.md` summary.
-- Update `honeypot.py` and `logger.py` (and add modules as needed) to implement the honeypot.
+All logs are saved to:
 
-### Getting started
-1. Implement your honeypot logic in `honeypot.py`.
-2. Wire logging in `logger.py` and record results in `logs/`.
-3. Summarize your findings in `analysis.md`.
-4. Run from the repo root with `docker-compose up honeypot`.
+```bash
+logs/honeypot.log
+```
+
+### How It Works
+
+* Built using Python and the `paramiko` library
+* Sends a realistic SSH banner
+* Provides a fake shell that responds like a real system
+* Runs inside a Docker container
+
+### How to Run the Honeypot
+
+From the root of the project:
+
+```bash
+docker-compose up honeypot
+```
+
+---
+
+### How to Test It
+
+From another terminal, you can connect to the honeypot:
+
+```bash
+ssh admin@localhost -p 2222
+```
+
+Or from inside the Docker network:
+
+```bash
+ssh admin@172.20.0.30 -p 22
+```
+
+Try different usernames, passwords, and commands to simulate attacks.
+
+---
+
+### Viewing the Logs
+
+```bash
+cat honeypot/logs/honeypot.log
+```

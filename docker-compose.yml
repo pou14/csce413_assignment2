@@ -88,7 +88,6 @@ services:
     container_name: 2_network_honeypot
     build:
       context: ./honeypot
-      network: host
     dns:
       - 8.8.8.8
       - 1.1.1.1
