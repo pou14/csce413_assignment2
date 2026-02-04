@@ -11,12 +11,14 @@ DEFAULT_DELAY = 0.3
 
 
 def send_knock(target, port, delay):
-    """Send a single knock to the target port."""
-    # TODO: Choose UDP or TCP knocks based on your design.
-    # Example TCP knock stub:
+    """Send a single TCP SYN knock to the target port."""
     try:
-        with socket.create_connection((target, port), timeout=1.0):
-            pass
+        # Change to SOCK_STREAM for TCP
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(0.1) # Short timeout, we don't need a full connection
+        # This sends the SYN packet knockd is looking for
+        sock.connect_ex((target, port)) 
+        sock.close()
     except OSError:
         pass
     time.sleep(delay)

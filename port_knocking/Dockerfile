@@ -1,11 +1,14 @@
-FROM python:3.11-slim
+# Use the existing base from your assignment
+FROM csce413_assignment2_secret_ssh 
 
-WORKDIR /app
+# 1. Install knockd and iptables
+USER root
+RUN apt-get update && apt-get install -y knockd iptables && rm -rf /var/lib/apt/lists/*
 
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends iptables iproute2 \
-    && rm -rf /var/lib/apt/lists/*
+# 2. Copy the config files we created
+COPY knockd.conf /etc/knockd.conf
+COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
 
-COPY knock_server.py knock_client.py ./
-
-CMD ["python3", "knock_server.py"]
+# 3. Overwrite the original entrypoint to start knockd
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
