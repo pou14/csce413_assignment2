@@ -6,19 +6,15 @@ docker stop $(docker ps -q) 2>/dev/null
 docker container prune -f
 docker network prune -f
 
-# Build and start NON-conflicting services only
 docker compose build
 docker compose up -d database redis secret_api port_knocking
 docker compose up -d webapp secret_ssh
-
-# Start secure SSH first (uses port 2222)
-# docker start 2_network_secret_ssh
 
 docker ps
 echo ""
 
 echo "======================================"
-echo " CSCE413 Security Assignment Demo"
+echo " CSCE413 Assignment 2 Demo"
 echo "======================================"
 echo ""
 
@@ -67,7 +63,6 @@ echo "===== PART 3: PORT KNOCKING ====="
 echo "First show SSH port blocked."
 
 cd "$ROOT_DIR/port_knocking"
-# python3 knock_client.py --target 172.20.0.20 --sequence 1234,5678,9012
 read -p "Press Enter to try SSH BEFORE knocking..."
 ssh sshuser@172.20.0.20 -p 2222
 echo ""
